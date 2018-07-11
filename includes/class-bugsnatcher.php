@@ -38,25 +38,12 @@ class Bugsnatcher {
 	 * @var      Bugsnatcher_Loader    $loader    Maintains and registers all hooks for the plugin.
 	 */
 	protected $loader;
-
-	/**
-	 * The unique identifier of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   protected
-	 * @var      string    $plugin_name    The string used to uniquely identify this plugin.
-	 */
-	protected $plugin_name;
-
-	/**
-	 * The current version of the plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   protected
-	 * @var      string    $version    The current version of the plugin.
-	 */
-	protected $version;
-
+	
+	private $plugin_data;
+	private $options;
+	private $user_agent;
+	private $timeout;
+	
 	/**
 	 * Define the core functionality of the plugin.
 	 *
@@ -66,21 +53,133 @@ class Bugsnatcher {
 	 *
 	 * @since    1.0.0
 	 */
-	public function __construct() {
-		if ( defined( 'PLUGIN_NAME_VERSION' ) ) {
-			$this->version = PLUGIN_NAME_VERSION;
-		} else {
-			$this->version = '1.0.0';
-		}
-		$this->plugin_name = 'bugsnatcher';
-
+	public function __construct($plugin_data)
+	{
+		set_error_handler([$this, 'errorHandler']);
+		set_exception_handler([$this, 'exceptionHandler']);
+		
+		$this->plugin_data = $plugin_data;
+		$this->options = get_option($this->plugin_data['slug']);
+		$this->user_agent = 'Wordpress/' . get_bloginfo('version') . '; '.$this->plugin_data['name'] . '/' . $this->plugin_data['version'];
+		$this->timeout = 5;
+		
 		$this->load_dependencies();
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
-
+	}
+	
+	public function writeLog($log_entry)
+	{
+		$file = __DIR__ . '/../../../../bugsnatcher.log';
+		file_put_contents($file, $log_entry . PHP_EOL, FILE_APPEND);
+	}
+	
+	public function errorHandler($errno, $errstr, $errfile, $errline)
+	{
+		$this->writeLog('Error occured at line ' . $errline . ' in file ' . $errfile . ': '.$errno . ' (' . $errstr . ')');
+	}
+	
+	public function exceptionHandler($e)
+	{
+		$this->writeLog('an exception occured.');
 	}
 
+	public function sendDiscordNotification($message)
+	{
+		$url = $this->options['discord_webhook'];
+		$fields = json_encode(array('content' => $message));
+		
+		$response = wp_remote_retrieve_body(wp_remote_post($url, array(
+			'timeout' => $this->timeout,
+			'user-agent' => $this->user_agent,
+			'body' => $fields,
+		)));
+	}
+	
+	public function sendSlackNotification($message)
+	{
+		$fields = array(
+			'token' => $this->options['slack_apikey'],
+			'channel' => $this->options['slack_channel'], // prefix with a '#'
+			'text' => $message,
+			'username' => $this->options['slack_botname'], // freely name the sender
+		);
+		
+		$response = wp_remote_retrieve_body(wp_remote_post('https://slack.com/api/chat.postMessage', array(
+			'timeout' => $this->timeout,
+			'user-agent' => $this->user_agent,
+			'body' => $fields,
+		)));
+	}
+	
+	public function sendStrideNotification($message)
+	{
+		$fields = array(
+			'body' => array(
+				'version' => 1,
+				'type' => 'doc',
+				'content' => array(
+					array(
+						'type' => 'paragraph',
+						'content' => array(
+							array(
+								'type' => 'text',
+								'text' => $message,
+							)
+						)
+					)
+				)
+			)
+		);
+		
+		$url = sprintf('https://api.atlassian.com/site/%s/conversation/%s/message',
+			$this->options['stride_cloud_id'], $this->options['stride_conversation_id']);
+		
+		$response = wp_remote_retrieve_body(wp_remote_post($url, array(
+			'timeout' => $this->timeout,
+			'user-agent' => $this->user_agent,
+			'body' => $fields,
+			'headers' => array(
+				'Content-Type: application/json',
+				'Authorization: Bearer ' . $this->options['stride_bearer_token'],
+			),
+		)));
+	}
+	
+	public function sendHipChatNotification($message)
+	{
+		$fields = array(
+			'color' => 'green',
+			'message' => $message,
+			'notify' => false,
+			'message_format' => 'text'
+		);
+		
+		$url = sprintf('https://%s.hipchat.com/v2/room/%s/notification?auth_token=%s',
+			$this->options['hipchat_chatname'], $this->options['hipchat_room_number'], $this->options['hipchat_token']);
+		
+		$response = wp_remote_retrieve_body(wp_remote_post($url, array(
+			'timeout' => $this->timeout,
+			'user-agent' => $this->user_agent,
+			'body' => $fields,
+			'headers' => array(
+				'Content-Type: application/json',
+			),
+		)));
+	}
+	
+	public function sendEmailNotification($message)
+	{
+		$emails = explode(',', $this->options['email_list']);
+		$headers = array(
+			'From' => get_bloginfo('admin_email'),
+		);
+		foreach ($emails as $email) {
+			wp_mail(trim($email), 'New verdicts grabbed', $message, $headers);
+		}
+	}
+	
 	/**
 	 * Load the required dependencies for this plugin.
 	 *
@@ -156,7 +255,16 @@ class Bugsnatcher {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-
+		
+		// Add menu item
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'add_plugin_admin_menu' );
+		
+		// Add Settings link to the plugin
+		$plugin_basename = plugin_basename( plugin_dir_path( __DIR__ ) . $this->plugin_data['slug'] . '.php' );
+		$this->loader->add_filter( 'plugin_action_links_' . $plugin_basename, $plugin_admin, 'add_action_links' );
+		
+		// Save/Update our plugin options
+		$this->loader->add_action('admin_init', $plugin_admin, 'options_update');
 	}
 
 	/**
@@ -192,7 +300,7 @@ class Bugsnatcher {
 	 * @return    string    The name of the plugin.
 	 */
 	public function get_plugin_name() {
-		return $this->plugin_name;
+		return $this->plugin_data['slug'];
 	}
 
 	/**
@@ -212,7 +320,7 @@ class Bugsnatcher {
 	 * @return    string    The version number of the plugin.
 	 */
 	public function get_version() {
-		return $this->version;
+		return $this->plugin_data['version'];
 	}
 
 }

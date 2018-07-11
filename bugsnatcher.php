@@ -15,7 +15,7 @@
  * @wordpress-plugin
  * Plugin Name:       BugSnatcher
  * Plugin URI:        http://wpcr.kaiser-code.eu/info/plugin/bugsnatcher
- * Description:       This is a short description of what the plugin does. It's displayed in the WordPress admin area.
+ * Description:       Catches errors and uncaught exceptions, fails silently and messages you instead.
  * Version:           1.0.0
  * Author:            Robin Kaiser
  * Author URI:        http://kaiserrobin.eu
@@ -31,11 +31,13 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 /**
- * Currently plugin version.
- * Start at version 1.0.0 and use SemVer - https://semver.org
- * Rename this for your plugin and update it as you release new versions.
+ * Determine plugin data from head comment
  */
-define( 'PLUGIN_NAME_VERSION', '1.0.0' );
+$plugin_data = get_file_data(__FILE__, array(
+	'version' => 'Version',
+	'slug' => 'Text Domain',
+	'name' => 'Plugin Name',
+), 'plugin');
 
 /**
  * The code that runs during plugin activation.
@@ -72,11 +74,11 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-bugsnatcher.php';
  * not affect the page life cycle.
  *
  * @since    1.0.0
+ *
+ * @param $plugin_data
  */
-function run_bugsnatcher() {
-
-	$plugin = new Bugsnatcher();
+function run_bugsnatcher($plugin_data) {
+	$plugin = new Bugsnatcher($plugin_data);
 	$plugin->run();
-
 }
-run_bugsnatcher();
+run_bugsnatcher($plugin_data);
