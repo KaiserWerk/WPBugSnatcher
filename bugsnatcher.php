@@ -33,11 +33,11 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Determine plugin data from head comment
  */
-$plugin_data = get_file_data(__FILE__, array(
+$plugin_data = get_file_data( __FILE__, array(
 	'version' => 'Version',
 	'slug' => 'Text Domain',
 	'name' => 'Plugin Name',
-), 'plugin');
+), 'plugin' );
 
 /**
  * The code that runs during plugin activation.
@@ -77,8 +77,8 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-bugsnatcher.php';
  *
  * @param $plugin_data
  */
-function run_bugsnatcher($plugin_data) {
-	$plugin = new Bugsnatcher($plugin_data);
+function run_bugsnatcher( $plugin_data ) {
+	$plugin = new Bugsnatcher( $plugin_data );
 	$plugin->run();
 }
-run_bugsnatcher($plugin_data);
+run_bugsnatcher( $plugin_data );

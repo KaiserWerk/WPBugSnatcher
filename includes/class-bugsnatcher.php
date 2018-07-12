@@ -27,8 +27,8 @@
  * @subpackage Bugsnatcher/includes
  * @author     Robin Kaiser <info@r-k.mx>
  */
-class Bugsnatcher {
-
+class Bugsnatcher
+{
 	/**
 	 * The loader that's responsible for maintaining and registering all hooks that power
 	 * the plugin.
@@ -39,9 +39,29 @@ class Bugsnatcher {
 	 */
 	protected $loader;
 	
+	/**
+	 * Contains the plugin data
+	 *
+	 * @var array
+	 */
 	private $plugin_data;
+	/**
+	 * Contains the saves plugin settings
+	 *
+	 * @var array
+	 */
 	private $options;
+	/**
+	 * The UserAgent used for HTTP calls
+	 *
+	 * @var string
+	 */
 	private $user_agent;
+	/**
+	 * Standard timeout in seconds for HTTP calls
+	 *
+	 * @var int
+	 */
 	private $timeout;
 	
 	/**
@@ -52,91 +72,136 @@ class Bugsnatcher {
 	 * the public-facing side of the site.
 	 *
 	 * @since    1.0.0
+	 *
+	 * @param $plugin_data
 	 */
-	public function __construct($plugin_data)
+	public function __construct( $plugin_data )
 	{
-		set_error_handler([$this, 'errorHandler']);
-		set_exception_handler([$this, 'exceptionHandler']);
+		// set custom error and exception handler
+		set_error_handler( [$this, 'errorHandler'] );
+		set_exception_handler( [$this, 'exceptionHandler'] );
 		
+		// set private variables
 		$this->plugin_data = $plugin_data;
-		$this->options = get_option($this->plugin_data['slug']);
-		$this->user_agent = 'Wordpress/' . get_bloginfo('version') . '; '.$this->plugin_data['name'] . '/' . $this->plugin_data['version'];
+		$this->options = get_option( $this->plugin_data['slug'] );
+		$this->user_agent = 'Wordpress/' . get_bloginfo( 'version' ) . '; '.$this->plugin_data['name'] . '/' . $this->plugin_data['version'];
 		$this->timeout = 5;
 		
+		// do the standard plugin stuffs
 		$this->load_dependencies();
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 	}
 	
-	public function writeLog($log_entry)
+	/**
+	 * Write the bugsnatcher log
+	 * //@TODO put the log file into a editable setting
+	 *
+	 * @param string $log_entry
+	 * @param string $log_file (optional)
+	 */
+	public function writeLog( $log_entry, $log_file = '/../../../../bugsnatcher.log' )
 	{
-		$file = __DIR__ . '/../../../../bugsnatcher.log';
-		file_put_contents($file, $log_entry . PHP_EOL, FILE_APPEND);
+		$file = __DIR__ . $log_file;
+		file_put_contents( $file, $log_entry . PHP_EOL, FILE_APPEND );
 	}
 	
-	public function errorHandler($errno, $errstr, $errfile, $errline)
+	/**
+	 * The new error handler method.
+	 * Don't call this directly; it must be public to get registered.
+	 *
+	 * @param int $errno
+	 * @param string $errstr
+	 * @param string $errfile
+	 * @param int $errline
+	 */
+	public function errorHandler( $errno, $errstr, $errfile, $errline )
 	{
-		$this->writeLog('Error occured at line ' . $errline . ' in file ' . $errfile . ': '.$errno . ' (' . $errstr . ')');
+		$this->writeLog( 'Error occured at line ' . $errline . ' in file ' . $errfile . ': '.$errno . ' (' . $errstr . ')' );
 	}
 	
-	public function exceptionHandler($e)
+	/**
+	 * The new exception handler method.
+	 * Don't call this directly; it must be public to get registered.
+	 *
+	 * @param object $e
+	 */
+	public function exceptionHandler( $e )
 	{
-		$this->writeLog('an exception occured.');
+		$this->writeLog( 'an exception occured.' );
 	}
-
-	public function sendDiscordNotification($message)
+	
+	/**
+	 * Sends a message to a discord channel.
+	 *
+	 * @param string $message
+	 */
+	public function sendDiscordNotification( $message )
 	{
 		$url = $this->options['discord_webhook'];
-		$fields = json_encode(array('content' => $message));
+		$fields = json_encode( ['content' => $message] );
 		
-		$response = wp_remote_retrieve_body(wp_remote_post($url, array(
+		$response = wp_remote_retrieve_body( wp_remote_post( $url, [
 			'timeout' => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'body' => $fields,
-		)));
+		] ) );
 	}
 	
-	public function sendSlackNotification($message)
+	/**
+	 * Sends a message to a Slack channel.
+	 *
+	 * @param string $message
+	 */
+	public function sendSlackNotification( $message )
 	{
-		$fields = array(
+		$url = 'https://slack.com/api/chat.postMessage';
+		$fields = [
 			'token' => $this->options['slack_apikey'],
 			'channel' => $this->options['slack_channel'], // prefix with a '#'
 			'text' => $message,
 			'username' => $this->options['slack_botname'], // freely name the sender
-		);
+		];
 		
-		$response = wp_remote_retrieve_body(wp_remote_post('https://slack.com/api/chat.postMessage', array(
+		$response = wp_remote_retrieve_body( wp_remote_post( $url, [
 			'timeout' => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'body' => $fields,
-		)));
+		] ) );
 	}
 	
-	public function sendStrideNotification($message)
+	/**
+	 * Sends a message to a Stride conversation.
+	 *
+	 * @param string $message
+	 */
+	public function sendStrideNotification( $message )
 	{
-		$fields = array(
-			'body' => array(
+		$url = sprintf(
+			'https://api.atlassian.com/site/%s/conversation/%s/message',
+			$this->options['stride_cloud_id'],
+			$this->options['stride_conversation_id']
+		);
+		$fields = [
+			'body' => [
 				'version' => 1,
 				'type' => 'doc',
-				'content' => array(
-					array(
+				'content' => [
+					[
 						'type' => 'paragraph',
-						'content' => array(
-							array(
+						'content' => [
+							[
 								'type' => 'text',
 								'text' => $message,
-							)
-						)
-					)
-				)
-			)
-		);
+							]
+						]
+					]
+				]
+			]
+		];
 		
-		$url = sprintf('https://api.atlassian.com/site/%s/conversation/%s/message',
-			$this->options['stride_cloud_id'], $this->options['stride_conversation_id']);
-		
-		$response = wp_remote_retrieve_body(wp_remote_post($url, array(
+		$response = wp_remote_retrieve_body( wp_remote_post( $url, [
 			'timeout' => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'body' => $fields,
@@ -144,39 +209,52 @@ class Bugsnatcher {
 				'Content-Type: application/json',
 				'Authorization: Bearer ' . $this->options['stride_bearer_token'],
 			),
-		)));
+		] ) );
 	}
 	
-	public function sendHipChatNotification($message)
+	/**
+	 * Sends a message to a HipChat room.
+	 *
+	 * @param string $message
+	 */
+	public function sendHipChatNotification( $message )
 	{
-		$fields = array(
+		$url = sprintf(
+			'https://%s.hipchat.com/v2/room/%s/notification?auth_token=%s',
+			$this->options['hipchat_chatname'],
+			$this->options['hipchat_room_number'],
+			$this->options['hipchat_token']
+		);
+		$fields = [
 			'color' => 'green',
 			'message' => $message,
 			'notify' => false,
 			'message_format' => 'text'
-		);
+		];
 		
-		$url = sprintf('https://%s.hipchat.com/v2/room/%s/notification?auth_token=%s',
-			$this->options['hipchat_chatname'], $this->options['hipchat_room_number'], $this->options['hipchat_token']);
-		
-		$response = wp_remote_retrieve_body(wp_remote_post($url, array(
+		$response = wp_remote_retrieve_body( wp_remote_post( $url, [
 			'timeout' => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'body' => $fields,
-			'headers' => array(
+			'headers' => [
 				'Content-Type: application/json',
-			),
-		)));
+			],
+		] ) );
 	}
 	
-	public function sendEmailNotification($message)
+	/**
+	 * Sends an email (or multiple emails) with the supplied message.
+	 *
+	 * @param $message
+	 */
+	public function sendEmailNotification( $message )
 	{
-		$emails = explode(',', $this->options['email_list']);
-		$headers = array(
+		$emails = explode( ',', $this->options['email_list'] );
+		$headers = [
 			'From' => get_bloginfo('admin_email'),
-		);
-		foreach ($emails as $email) {
-			wp_mail(trim($email), 'New verdicts grabbed', $message, $headers);
+		];
+		foreach ( $emails as $email ) {
+			wp_mail( trim( $email ), 'New verdicts grabbed', $message, $headers );
 		}
 	}
 	
@@ -196,30 +274,30 @@ class Bugsnatcher {
 	 * @since    1.0.0
 	 * @access   private
 	 */
-	private function load_dependencies() {
-
+	private function load_dependencies()
+	{
 		/**
 		 * The class responsible for orchestrating the actions and filters of the
 		 * core plugin.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-bugsnatcher-loader.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-bugsnatcher-loader.php';
 
 		/**
 		 * The class responsible for defining internationalization functionality
 		 * of the plugin.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-bugsnatcher-i18n.php';
+		require_once plugin_dir_path( __DIR__ ) . 'includes/class-bugsnatcher-i18n.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-bugsnatcher-admin.php';
+		require_once plugin_dir_path( __DIR__ ) . 'admin/class-bugsnatcher-admin.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-bugsnatcher-public.php';
+		require_once plugin_dir_path( __DIR__ ) . 'public/class-bugsnatcher-public.php';
 
 		$this->loader = new Bugsnatcher_Loader();
 
@@ -234,12 +312,11 @@ class Bugsnatcher {
 	 * @since    1.0.0
 	 * @access   private
 	 */
-	private function set_locale() {
-
+	private function set_locale()
+	{
 		$plugin_i18n = new Bugsnatcher_i18n();
 
 		$this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
-
 	}
 
 	/**
@@ -249,8 +326,8 @@ class Bugsnatcher {
 	 * @since    1.0.0
 	 * @access   private
 	 */
-	private function define_admin_hooks() {
-
+	private function define_admin_hooks()
+	{
 		$plugin_admin = new Bugsnatcher_Admin( $this->get_plugin_name(), $this->get_version() );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
@@ -274,13 +351,12 @@ class Bugsnatcher {
 	 * @since    1.0.0
 	 * @access   private
 	 */
-	private function define_public_hooks() {
-
+	private function define_public_hooks()
+	{
 		$plugin_public = new Bugsnatcher_Public( $this->get_plugin_name(), $this->get_version() );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-
 	}
 
 	/**
@@ -288,7 +364,8 @@ class Bugsnatcher {
 	 *
 	 * @since    1.0.0
 	 */
-	public function run() {
+	public function run()
+	{
 		$this->loader->run();
 	}
 
@@ -299,7 +376,8 @@ class Bugsnatcher {
 	 * @since     1.0.0
 	 * @return    string    The name of the plugin.
 	 */
-	public function get_plugin_name() {
+	public function get_plugin_name()
+	{
 		return $this->plugin_data['slug'];
 	}
 
@@ -309,7 +387,8 @@ class Bugsnatcher {
 	 * @since     1.0.0
 	 * @return    Bugsnatcher_Loader    Orchestrates the hooks of the plugin.
 	 */
-	public function get_loader() {
+	public function get_loader()
+	{
 		return $this->loader;
 	}
 
@@ -319,8 +398,8 @@ class Bugsnatcher {
 	 * @since     1.0.0
 	 * @return    string    The version number of the plugin.
 	 */
-	public function get_version() {
+	public function get_version()
+	{
 		return $this->plugin_data['version'];
 	}
-
 }
