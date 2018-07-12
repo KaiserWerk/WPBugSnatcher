@@ -19,7 +19,7 @@
  *
  * @package    Bugsnatcher
  * @subpackage Bugsnatcher/includes
- * @author     Robin Kaiser <m@r-k.mx>
+ * @author     Robin Kaiser <info@r-k.mx>
  */
 class Bugsnatcher_Loader {
 
