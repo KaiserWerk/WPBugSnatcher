@@ -20,8 +20,8 @@
  * @subpackage Bugsnatcher/includes
  * @author     Robin Kaiser <info@r-k.mx>
  */
-class Bugsnatcher_Deactivator {
-
+class Bugsnatcher_Deactivator
+{
 	/**
 	 * Short Description. (use period)
 	 *
@@ -29,8 +29,7 @@ class Bugsnatcher_Deactivator {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function deactivate() {
-
+	public static function deactivate()
+	{
 	}
-
 }

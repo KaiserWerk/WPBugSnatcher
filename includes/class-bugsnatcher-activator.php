@@ -20,8 +20,8 @@
  * @subpackage Bugsnatcher/includes
  * @author     Robin Kaiser <info@r-k.mx>
  */
-class Bugsnatcher_Activator {
-
+class Bugsnatcher_Activator
+{
 	/**
 	 * Short Description. (use period)
 	 *
@@ -29,8 +29,7 @@ class Bugsnatcher_Activator {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function activate() {
-
+	public static function activate()
+	{
 	}
-
 }

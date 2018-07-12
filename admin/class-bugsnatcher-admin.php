@@ -20,8 +20,8 @@
  * @subpackage Bugsnatcher/admin
  * @author     Robin Kaiser <info@r-k.mx>
  */
-class Bugsnatcher_Admin {
-
+class Bugsnatcher_Admin
+{
 	/**
 	 * The ID of this plugin.
 	 *
@@ -47,11 +47,10 @@ class Bugsnatcher_Admin {
 	 * @param      string    $plugin_name       The name of this plugin.
 	 * @param      string    $version    The version of this plugin.
 	 */
-	public function __construct( $plugin_name, $version ) {
-
+	public function __construct( $plugin_name, $version )
+	{
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
-
 	}
 
 	/**
@@ -59,8 +58,8 @@ class Bugsnatcher_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_styles() {
-
+	public function enqueue_styles()
+	{
 		/**
 		 * This function is provided for demonstration purposes only.
 		 *
@@ -72,7 +71,6 @@ class Bugsnatcher_Admin {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
-
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/bugsnatcher-admin.css', array(), $this->version, 'all' );
 
 	}
@@ -82,8 +80,8 @@ class Bugsnatcher_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_scripts() {
-
+	public function enqueue_scripts()
+	{
 		/**
 		 * This function is provided for demonstration purposes only.
 		 *
@@ -95,9 +93,7 @@ class Bugsnatcher_Admin {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
-
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/bugsnatcher-admin.js', array( 'jquery' ), $this->version, false );
-
 	}
 	
 	/**
@@ -105,9 +101,8 @@ class Bugsnatcher_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	
-	public function add_plugin_admin_menu() {
-		
+	public function add_plugin_admin_menu()
+	{
 		/*
 		 * Add a settings page for this plugin to the Settings menu.
 		 *
@@ -125,8 +120,8 @@ class Bugsnatcher_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	
-	public function add_action_links( $links ) {
+	public function add_action_links( $links )
+	{
 		/*
 		*  Documentation : https://codex.wordpress.org/Plugin_API/Filter_Reference/plugin_action_links_(plugin_file_name)
 		*/
@@ -142,22 +137,24 @@ class Bugsnatcher_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	
-	public function display_plugin_setup_page() {
+	public function display_plugin_setup_page()
+	{
 		include_once 'partials/bugsnatcher-admin-display.php';
 	}
 	
-	public function options_update() {
+	public function options_update()
+	{
 		register_setting($this->plugin_name, $this->plugin_name, array($this, 'validate'));
 	}
 	
-	public function validate($input) {
+	public function validate($input)
+	{
 		$valid = array();
 		
 		$options = get_option($this->plugin_name);
 		
-		if (isset($_POST['btn_log_settings'])) {
-			$valid['log_enabled'] = (isset($input['log_enabled']) && !empty($input['log_enabled'])) ? 1 : 0;
+		if ( isset( $_POST['btn_log_settings'] ) ) {
+			$valid['log_enabled'] = ( isset($input['log_enabled'] ) && !empty( $input['log_enabled'] ) ) ? 1 : 0;
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
 			$valid['discord_webhook'] = $options['discord_webhook'];
@@ -181,10 +178,10 @@ class Bugsnatcher_Admin {
 			$valid['email_list'] = $options['email_list'];
 		}
 		
-		if (isset($_POST['btn_discord_settings'])) {
+		if ( isset( $_POST['btn_discord_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
 			
-			$valid['discord_enabled'] = (isset($input['discord_enabled']) && !empty($input['discord_enabled'])) ? 1 : 0;
+			$valid['discord_enabled'] = ( isset($input['discord_enabled'] ) && !empty( $input['discord_enabled'] ) ) ? 1 : 0;
 			$valid['discord_webhook'] = sanitize_text_field($input['discord_webhook']);
 			
 			$valid['slack_enabled'] = $options['slack_enabled'];
@@ -205,13 +202,13 @@ class Bugsnatcher_Admin {
 			$valid['email_enabled'] = $options['email_enabled'];
 			$valid['email_list'] = $options['email_list'];
 		}
-		if (isset($_POST['btn_slack_settings'])) {
+		if ( isset( $_POST['btn_slack_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
 			$valid['discord_webhook'] = $options['discord_webhook'];
 			
-			$valid['slack_enabled'] = (isset($input['slack_enabled']) && !empty($input['slack_enabled'])) ? 1 : 0;
+			$valid['slack_enabled'] = ( isset( $input['slack_enabled'] ) && !empty( $input['slack_enabled'] ) ) ? 1 : 0;
 			$valid['slack_apikey'] = sanitize_text_field($input['slack_apikey']);
 			$valid['slack_channel'] = sanitize_text_field($input['slack_channel']);
 			$valid['slack_botname'] = sanitize_text_field($input['slack_botname']);
@@ -229,7 +226,7 @@ class Bugsnatcher_Admin {
 			$valid['email_enabled'] = $options['email_enabled'];
 			$valid['email_list'] = $options['email_list'];
 		}
-		if (isset($_POST['btn_stride_settings'])) {
+		if ( isset( $_POST['btn_stride_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
@@ -240,7 +237,7 @@ class Bugsnatcher_Admin {
 			$valid['slack_channel'] = $options['slack_channel'];
 			$valid['slack_botname'] = $options['slack_botname'];
 			
-			$valid['stride_enabled'] = (isset($input['stride_enabled']) && !empty($input['stride_enabled'])) ? 1 : 0;
+			$valid['stride_enabled'] = ( isset( $input['stride_enabled'] ) && !empty( $input['stride_enabled'] ) ) ? 1 : 0;
 			$valid['stride_bearer_token'] = sanitize_text_field($input['stride_bearer_token']);
 			$valid['stride_cloud_id'] = sanitize_text_field($input['stride_cloud_id']);
 			$valid['stride_conversation_id'] = sanitize_text_field($input['stride_conversation_id']);
@@ -254,7 +251,7 @@ class Bugsnatcher_Admin {
 			$valid['email_list'] = $options['email_list'];
 			
 		}
-		if (isset($_POST['btn_hipchat_settings'])) {
+		if ( isset( $_POST['btn_hipchat_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
@@ -270,7 +267,7 @@ class Bugsnatcher_Admin {
 			$valid['stride_cloud_id'] = $options['stride_cloud_id'];
 			$valid['stride_conversation_id'] = $options['stride_conversation_id'];
 			
-			$valid['hipchat_enabled'] = (isset($input['hipchat_enabled']) && !empty($input['hipchat_enabled'])) ? 1 : 0;
+			$valid['hipchat_enabled'] = ( isset( $input['hipchat_enabled'] ) && !empty( $input['hipchat_enabled'] ) ) ? 1 : 0;
 			$valid['hipchat_chatname'] = sanitize_text_field($input['hipchat_chatname']);
 			$valid['hipchat_room_number'] = sanitize_text_field($input['hipchat_room_number']);
 			$valid['hipchat_token'] = sanitize_text_field($input['hipchat_token']);
@@ -278,7 +275,7 @@ class Bugsnatcher_Admin {
 			$valid['email_enabled'] = $options['email_enabled'];
 			$valid['email_list'] = $options['email_list'];
 		}
-		if (isset($_POST['btn_email_settings'])) {
+		if ( isset( $_POST['btn_email_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
@@ -299,53 +296,53 @@ class Bugsnatcher_Admin {
 			$valid['hipchat_room_number'] = $options['hipchat_room_number'];
 			$valid['hipchat_token'] = $options['hipchat_token'];
 			
-			$valid['email_enabled'] = (isset($input['email_enabled']) && !empty($input['email_enabled'])) ? 1 : 0;
+			$valid['email_enabled'] = ( isset( $input['email_enabled'] ) && !empty( $input['email_enabled'] ) ) ? 1 : 0;
 			$valid['email_list'] = esc_textarea($input['email_list']);
 		}
-		if (isset($_POST['btn_import_settings'])) {
-			if (isset($_FILES['bugsnatcher']['tmp_name']['import_file'])) {
+		if ( isset( $_POST['btn_import_settings'] ) ) {
+			if ( isset( $_FILES['bugsnatcher']['tmp_name']['import_file'] ) ) {
 				
-				$cont = trim(file_get_contents($_FILES['bugsnatcher']['tmp_name']['import_file']));
-				if ($this->isJson($cont)) {
-					$json = json_decode($cont, true);
+				$cont = trim( file_get_contents( $_FILES['bugsnatcher']['tmp_name']['import_file'] ) );
+				if ( $this->isJson( $cont ) ) {
+					$json = json_decode( $cont, true );
 					foreach ( $json as $key => $value ) {
-						if (array_key_exists($key, $options)) {
+						if ( array_key_exists( $key, $options ) ) {
 							$valid[$key] = $json[$key];
 						}
 					}
 					
 					foreach ( $valid as $key => $value ) {
-						if (empty($valid[$key])) {
+						if ( empty( $valid[$key] ) ) {
 							$valid[$key] = $options[$key];
 						}
 					}
 				} else {
-					die('invalid json!');
+					die( 'invalid json!' );
 				}
 				
-			} elseif (!empty($input['import_settings_text'])) {
-				if ($this->isJson($input['import_settings_text'])) {
-					$json = json_decode($input['import_settings_text'], true);
+			} elseif ( ! empty( $input['import_settings_text'] ) ) {
+				if ( $this->isJson( $input['import_settings_text'] ) ) {
+					$json = json_decode( $input['import_settings_text'], true );
 					foreach ( $json as $key => $value ) {
-						if (array_key_exists($key, $options)) {
+						if ( array_key_exists( $key, $options ) ) {
 							$valid[$key] = $json[$key];
 						}
 					}
 					
 					foreach ( $valid as $key => $value ) {
-						if (empty($valid[$key])) {
+						if ( empty( $valid[$key] ) ) {
 							$valid[$key] = $options[$key];
 						}
 					}
 				} else {
-					die('invalid json!');
+					die( 'invalid json!' );
 				}
 			}
 		}
-		if (isset($_POST['btn_export_settings'])) {
-			$json = json_encode($options, JSON_PRETTY_PRINT);
-			header('Content-Type: application/json');
-			header('Content-Disposition: attachment; filename="settings.json"');
+		if ( isset( $_POST['btn_export_settings'] ) ) {
+			$json = json_encode( $options, JSON_PRETTY_PRINT );
+			header( 'Content-Type: application/json' );
+			header( 'Content-Disposition: attachment; filename="settings.json"' );
 			echo $json;
 			die;
 		}
@@ -353,8 +350,8 @@ class Bugsnatcher_Admin {
 		return $valid;
 	}
 	
-	private function isJson($str) {
-		$json = json_decode($str);
+	private function isJson( $str ) {
+		$json = json_decode( $str );
 		return $json && $str != $json;
 	}
 }
