@@ -96,14 +96,16 @@ class Bugsnatcher
 	
 	/**
 	 * Write the bugsnatcher log
-	 * //@TODO put the log file into a editable setting
 	 *
 	 * @param string $log_entry
 	 * @param string $log_file (optional)
 	 */
-	public function writeLog( $log_entry, $log_file = '/../../../../bugsnatcher.log' )
+	public function writeLog( $log_entry, $log_file = '../../../../bugsnatcher.log' )
 	{
-		$file = __DIR__ . $log_file;
+		if ( ! empty( $this->options['log_file'] ) ) {
+			$log_file = DIRECTORY_SEPARATOR . $this->options['log_file'];
+		}
+		$file = __DIR__ . DIRECTORY_SEPARATOR . ltrim( $log_file, '/' );
 		file_put_contents( $file, $log_entry . PHP_EOL, FILE_APPEND );
 	}
 	
@@ -118,7 +120,17 @@ class Bugsnatcher
 	 */
 	public function errorHandler( $errno, $errstr, $errfile, $errline )
 	{
-		$this->writeLog( 'Error occured at line ' . $errline . ' in file ' . $errfile . ': '.$errno . ' (' . $errstr . ')' );
+		$message = 'Error occured at line ' . $errline . ' in file ' . $errfile . ': ' . $errno . ' (' . $errstr . ')';
+		if ( $this->options['log_enabled'] === '1' ) {
+			$this->writeLog( $message );
+		}
+		
+		$this->sendDiscordNotification( $message );
+		$this->sendSlackNotification( $message );
+		$this->sendStrideNotification( $message );
+		$this->sendHipChatNotification( $message );
+		$this->sendEmailNotification( $message );
+		$this->sendToCustomWebhook( $message );
 	}
 	
 	/**
@@ -129,33 +141,56 @@ class Bugsnatcher
 	 */
 	public function exceptionHandler( $e )
 	{
-		$this->writeLog( 'an exception occured.' );
+		$message = 'Exception occured at line ' . $e->getLine() . ' in file ' . $e->getFile() . ': ' . $e->getCode() .
+		           '; ' . $e->getMessage() . ' (' . $e->getTraceAsString() . ')';
+		if ( $this->options['log_enabled'] === '1' ) {
+			$this->writeLog( $message );
+		}
+		
+		$this->sendDiscordNotification( $message );
+		$this->sendSlackNotification( $message );
+		$this->sendStrideNotification( $message );
+		$this->sendHipChatNotification( $message );
+		$this->sendEmailNotification( $message );
+		$this->sendToCustomWebhook( $message );
 	}
 	
 	/**
 	 * Sends a message to a discord channel.
 	 *
 	 * @param string $message
+	 *
+	 * @return bool|null
 	 */
 	public function sendDiscordNotification( $message )
 	{
+		if ( (int)$this->options['discord_enabled'] !== 1 ) {
+			return false;
+		}
+		
 		$url = $this->options['discord_webhook'];
 		$fields = json_encode( ['content' => $message] );
 		
-		$response = wp_remote_retrieve_body( wp_remote_post( $url, [
+		wp_remote_post( $url, [
 			'timeout' => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'body' => $fields,
-		] ) );
+		] );
 	}
 	
 	/**
 	 * Sends a message to a Slack channel.
 	 *
 	 * @param string $message
+	 *
+	 * @return bool|null
 	 */
 	public function sendSlackNotification( $message )
 	{
+		if ( (int)$this->options['slack_enabled'] !== 1 ) {
+			return false;
+		}
+		
 		$url = 'https://slack.com/api/chat.postMessage';
 		$fields = [
 			'token' => $this->options['slack_apikey'],
@@ -164,20 +199,26 @@ class Bugsnatcher
 			'username' => $this->options['slack_botname'], // freely name the sender
 		];
 		
-		$response = wp_remote_retrieve_body( wp_remote_post( $url, [
+		wp_remote_post( $url, [
 			'timeout' => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'body' => $fields,
-		] ) );
+		] );
 	}
 	
 	/**
 	 * Sends a message to a Stride conversation.
 	 *
 	 * @param string $message
+	 *
+	 * @return bool|null
 	 */
 	public function sendStrideNotification( $message )
 	{
+		if ( (int)$this->options['stride_enabled'] !== 1 ) {
+			return false;
+		}
+		
 		$url = sprintf(
 			'https://api.atlassian.com/site/%s/conversation/%s/message',
 			$this->options['stride_cloud_id'],
@@ -201,7 +242,7 @@ class Bugsnatcher
 			]
 		];
 		
-		$response = wp_remote_retrieve_body( wp_remote_post( $url, [
+		wp_remote_post( $url, [
 			'timeout' => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'body' => $fields,
@@ -209,16 +250,22 @@ class Bugsnatcher
 				'Content-Type: application/json',
 				'Authorization: Bearer ' . $this->options['stride_bearer_token'],
 			),
-		] ) );
+		] );
 	}
 	
 	/**
 	 * Sends a message to a HipChat room.
 	 *
 	 * @param string $message
+	 *
+	 * @return bool|null
 	 */
 	public function sendHipChatNotification( $message )
 	{
+		if ( (int)$this->options['hipchat_enabled'] !== 1 ) {
+			return false;
+		}
+		
 		$url = sprintf(
 			'https://%s.hipchat.com/v2/room/%s/notification?auth_token=%s',
 			$this->options['hipchat_chatname'],
@@ -232,29 +279,55 @@ class Bugsnatcher
 			'message_format' => 'text'
 		];
 		
-		$response = wp_remote_retrieve_body( wp_remote_post( $url, [
+		wp_remote_post( $url, [
 			'timeout' => $this->timeout,
 			'user-agent' => $this->user_agent,
 			'body' => $fields,
 			'headers' => [
 				'Content-Type: application/json',
 			],
-		] ) );
+		] );
 	}
 	
 	/**
 	 * Sends an email (or multiple emails) with the supplied message.
 	 *
 	 * @param $message
+	 *
+	 * @return bool|null
 	 */
 	public function sendEmailNotification( $message )
 	{
+		if ( (int)$this->options['email_enabled'] !== 1 ) {
+			return false;
+		}
+		
 		$emails = explode( ',', $this->options['email_list'] );
 		$headers = [
-			'From' => get_bloginfo('admin_email'),
+			'From' => get_bloginfo( 'admin_email' ),
 		];
 		foreach ( $emails as $email ) {
 			wp_mail( trim( $email ), 'New verdicts grabbed', $message, $headers );
+		}
+	}
+	
+	public function sendToCustomWebhook( $message )
+	{
+		if ( (int)$this->options['custom_webhooks_enabled'] !== 1 ) {
+			return false;
+		}
+		
+		$urls = preg_split( "/\r\n|\n|\r/", $this->options['custom_webhooks_list'] );
+		$fields = [
+			'message' => $message,
+		];
+		
+		foreach ( $urls as $url ) {
+			wp_remote_post( trim( $url ), [
+				'timeout' => $this->timeout,
+				'user-agent' => $this->user_agent,
+				'body' => $fields,
+			] );
 		}
 	}
 	

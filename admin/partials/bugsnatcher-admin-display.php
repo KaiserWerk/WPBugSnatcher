@@ -15,6 +15,7 @@
 $options = get_option($this->plugin_name);
 
 $log_enabled = $options['log_enabled'];
+$log_file = $options['log_file'];
 
 $discord_enabled = $options['discord_enabled'];
 $discord_webhook = $options['discord_webhook'];
@@ -37,21 +38,26 @@ $hipchat_token = $options['hipchat_token'];
 $email_enabled = $options['email_enabled'];
 $email_list = $options['email_list'];
 
-settings_fields($this->plugin_name);
-do_settings_sections($this->plugin_name);
+$custom_webhooks_enabled = $options['custom_webhooks_enabled'];
+$custom_webhooks_list = $options['custom_webhooks_list'];
+
+settings_fields( $this->plugin_name );
+do_settings_sections( $this->plugin_name );
 
 $menu_tabs = array(
-	'log_settings' => __('Log Settings', $this->plugin_name),
+	'log_settings' => __('Logs', $this->plugin_name),
 	'discord_settings' => __('Discord', $this->plugin_name),
 	'slack_settings' => __('Slack', $this->plugin_name),
 	'stride_settings' => __('Stride', $this->plugin_name),
 	'hipchat_settings' => __('HipChat', $this->plugin_name),
 	'email_settings' => __('Email', $this->plugin_name),
-	'import_export' => __('Import & Export', $this->plugin_name),
+	'custom_webhooks_settings' => __('Custom Webhooks', $this->plugin_name),
+	'external_api_settings' => __('External APIs', $this->plugin_name),
+	'import_export' => __('Settings Import & Export', $this->plugin_name),
 );
 
 $tab_keys = array_keys($menu_tabs);
-$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field($_GET['tab']) : $tab_keys[0];
+$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : $tab_keys[0];
 
 ?>
 
@@ -78,11 +84,24 @@ if ($current_tab === 'log_settings') {
                 <table class="form-table">
                     <tbody>
                     <tr valign="top">
-                        <th scope="row"><?php _e( 'Enable writing log files', $this->plugin_name ); ?>:</th>
+                        <th scope="row"><?php _e( 'Enable writing log file', $this->plugin_name ); ?>:</th>
                         <td>
                             <label><input type="checkbox" id="<?php echo $this->plugin_name; ?>-log-enabled"
                                           name="<?php echo $this->plugin_name; ?>[log_enabled]" <?php checked( $log_enabled,
                                     '1', true ); ?>> Enable</label>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><?php _e( 'Log File', $this->plugin_name ); ?>:</th>
+                        <td>
+                            <input type="text" id="<?php echo $this->plugin_name; ?>-log-file"
+                                   name="<?php echo $this->plugin_name; ?>[log_file]" class="regular-text"
+                                   value="<?php if ( ! empty( $log_file ) ) {
+                                       echo $log_file;
+                                   } ?>"
+                                   placeholder="../../../../bugsnatcher.log">
+                            <span class="description"><?php _e( 'The optional path + filename of the log file; must be writable.  Leave empty for placeholder as default.',
+                                    $this->plugin_name ); ?></span>
                         </td>
                     </tr>
                     </tbody>
@@ -369,10 +388,50 @@ if ($current_tab === 'email_settings') {
     </form>
     <?php
 }
+if ($current_tab === 'custom_webhooks_settings') {
+    ?>
+    <form method="post" name="form_log_settings" action="options.php" enctype="multipart/form-data">
+        <?php settings_fields( $this->plugin_name ); ?>
+        <div class="postbox">
+            <div class="inside">
+                <h3 class="hndle"><?php _e( 'Custom Webhooks settings', $this->plugin_name ); ?></h3>
+
+                <table class="form-table">
+                    <tbody>
+                    <tr valign="top">
+                        <th scope="row"><?php _e( 'Enable custom webhooks', $this->plugin_name ); ?>:</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" id="<?php echo $this->plugin_name; ?>-custom-webhooks-enabled"
+                                    name="<?php echo $this->plugin_name; ?>[custom_webhooks_enabled]"
+                                    <?php checked( $custom_webhooks_enabled, '1', true ); ?>> Enable
+                            </label>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><?php _e( 'Webhook URL list', $this->plugin_name ); ?>:</th>
+                        <td>
+                            <textarea id="<?php echo $this->plugin_name; ?>-custom-webhooks-list"
+                                  name="<?php echo $this->plugin_name; ?>[custom_webhooks_list]" cols="80"
+                                  rows="10"><?php if ( ! empty( $custom_webhooks_list ) ) {
+                                       echo $custom_webhooks_list;
+                                   } ?></textarea>
+                            <p class="description"><?php _e( 'A list of URLs a POST request with the error
+                            data will be sent to. One URL per line.', $this->plugin_name ); ?></p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <input type="submit" name="btn_custom_webhooks_settings"
+                       value="<?php _e( 'Save custom webhooks settings', $this->plugin_name ); ?>"
+                       class="button-primary">
+            </div>
+        </div>
+    </form>
+    <?php
+}
 if ($current_tab === 'import_export') {
     ?>
-
-
     <form method="post" name="form_import_settings" action="options.php" enctype="multipart/form-data">
         <?php settings_fields( $this->plugin_name ); ?>
         <div class="postbox">
@@ -387,10 +446,13 @@ if ($current_tab === 'import_export') {
 
                         <th scope="row"><?php _e( 'Import File', $this->plugin_name ); ?>:</th>
                         <td>
-                            <input type="file" id="<?php echo $this->plugin_name; ?>-import-file"
-                                   name="<?php echo $this->plugin_name; ?>[import_file]">
-                            <p class="description"><?php _e( 'After selecting your file, click the button below to apply the settings to your site.',
-                                    $this->plugin_name ); ?></p>
+                            <input
+                                type="file"
+                                id="<?php echo $this->plugin_name; ?>-import-file"
+                                name="<?php echo $this->plugin_name; ?>[import_file]"
+                                accept="application/json,.json">
+                            <p class="description"><?php _e( 'After selecting your file, click the button below to
+                            apply the settings to the plugin.', $this->plugin_name ); ?></p>
                         </td>
                     </tr>
                     <tr valign="top">

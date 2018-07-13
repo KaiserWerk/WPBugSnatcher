@@ -155,6 +155,7 @@ class Bugsnatcher_Admin
 		
 		if ( isset( $_POST['btn_log_settings'] ) ) {
 			$valid['log_enabled'] = ( isset($input['log_enabled'] ) && !empty( $input['log_enabled'] ) ) ? 1 : 0;
+			$valid['log_file'] = sanitize_text_field( $input['log_file'] );
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
 			$valid['discord_webhook'] = $options['discord_webhook'];
@@ -176,13 +177,17 @@ class Bugsnatcher_Admin
 			
 			$valid['email_enabled'] = $options['email_enabled'];
 			$valid['email_list'] = $options['email_list'];
+			
+			$valid['custom_webhooks_enabled'] = $options['custom_webhooks_enabled'];
+			$valid['custom_webhooks_list'] = $options['custom_webhooks_list'];
 		}
 		
 		if ( isset( $_POST['btn_discord_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
+			$valid['log_file'] = $options['log_file'];
 			
 			$valid['discord_enabled'] = ( isset($input['discord_enabled'] ) && !empty( $input['discord_enabled'] ) ) ? 1 : 0;
-			$valid['discord_webhook'] = sanitize_text_field($input['discord_webhook']);
+			$valid['discord_webhook'] = sanitize_text_field( $input['discord_webhook'] );
 			
 			$valid['slack_enabled'] = $options['slack_enabled'];
 			$valid['slack_apikey']  = $options['slack_apikey'];
@@ -201,17 +206,21 @@ class Bugsnatcher_Admin
 			
 			$valid['email_enabled'] = $options['email_enabled'];
 			$valid['email_list'] = $options['email_list'];
+			
+			$valid['custom_webhooks_enabled'] = $options['custom_webhooks_enabled'];
+			$valid['custom_webhooks_list'] = $options['custom_webhooks_list'];
 		}
 		if ( isset( $_POST['btn_slack_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
+			$valid['log_file'] = $options['log_file'];
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
 			$valid['discord_webhook'] = $options['discord_webhook'];
 			
 			$valid['slack_enabled'] = ( isset( $input['slack_enabled'] ) && !empty( $input['slack_enabled'] ) ) ? 1 : 0;
-			$valid['slack_apikey'] = sanitize_text_field($input['slack_apikey']);
-			$valid['slack_channel'] = sanitize_text_field($input['slack_channel']);
-			$valid['slack_botname'] = sanitize_text_field($input['slack_botname']);
+			$valid['slack_apikey'] = sanitize_text_field( $input['slack_apikey'] );
+			$valid['slack_channel'] = sanitize_text_field( $input['slack_channel'] );
+			$valid['slack_botname'] = sanitize_text_field( $input['slack_botname'] );
 			
 			$valid['stride_enabled'] = $options['stride_enabled'];
 			$valid['stride_bearer_token'] = $options['stride_bearer_token'];
@@ -225,9 +234,13 @@ class Bugsnatcher_Admin
 			
 			$valid['email_enabled'] = $options['email_enabled'];
 			$valid['email_list'] = $options['email_list'];
+			
+			$valid['custom_webhooks_enabled'] = $options['custom_webhooks_enabled'];
+			$valid['custom_webhooks_list'] = $options['custom_webhooks_list'];
 		}
 		if ( isset( $_POST['btn_stride_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
+			$valid['log_file'] = $options['log_file'];
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
 			$valid['discord_webhook'] = $options['discord_webhook'];
@@ -238,9 +251,9 @@ class Bugsnatcher_Admin
 			$valid['slack_botname'] = $options['slack_botname'];
 			
 			$valid['stride_enabled'] = ( isset( $input['stride_enabled'] ) && !empty( $input['stride_enabled'] ) ) ? 1 : 0;
-			$valid['stride_bearer_token'] = sanitize_text_field($input['stride_bearer_token']);
-			$valid['stride_cloud_id'] = sanitize_text_field($input['stride_cloud_id']);
-			$valid['stride_conversation_id'] = sanitize_text_field($input['stride_conversation_id']);
+			$valid['stride_bearer_token'] = sanitize_text_field( $input['stride_bearer_token'] );
+			$valid['stride_cloud_id'] = sanitize_text_field( $input['stride_cloud_id'] );
+			$valid['stride_conversation_id'] = sanitize_text_field( $input['stride_conversation_id'] );
 			
 			$valid['hipchat_enabled'] = $options['hipchat_enabled'];
 			$valid['hipchat_chatname'] = $options['hipchat_chatname'];
@@ -250,9 +263,12 @@ class Bugsnatcher_Admin
 			$valid['email_enabled'] = $options['email_enabled'];
 			$valid['email_list'] = $options['email_list'];
 			
+			$valid['custom_webhooks_enabled'] = $options['custom_webhooks_enabled'];
+			$valid['custom_webhooks_list'] = $options['custom_webhooks_list'];
 		}
 		if ( isset( $_POST['btn_hipchat_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
+			$valid['log_file'] = $options['log_file'];
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
 			$valid['discord_webhook'] = $options['discord_webhook'];
@@ -268,15 +284,19 @@ class Bugsnatcher_Admin
 			$valid['stride_conversation_id'] = $options['stride_conversation_id'];
 			
 			$valid['hipchat_enabled'] = ( isset( $input['hipchat_enabled'] ) && !empty( $input['hipchat_enabled'] ) ) ? 1 : 0;
-			$valid['hipchat_chatname'] = sanitize_text_field($input['hipchat_chatname']);
-			$valid['hipchat_room_number'] = sanitize_text_field($input['hipchat_room_number']);
-			$valid['hipchat_token'] = sanitize_text_field($input['hipchat_token']);
+			$valid['hipchat_chatname'] = sanitize_text_field( $input['hipchat_chatname'] );
+			$valid['hipchat_room_number'] = sanitize_text_field( $input['hipchat_room_number'] );
+			$valid['hipchat_token'] = sanitize_text_field( $input['hipchat_token'] );
 			
 			$valid['email_enabled'] = $options['email_enabled'];
 			$valid['email_list'] = $options['email_list'];
+			
+			$valid['custom_webhooks_enabled'] = $options['custom_webhooks_enabled'];
+			$valid['custom_webhooks_list'] = $options['custom_webhooks_list'];
 		}
 		if ( isset( $_POST['btn_email_settings'] ) ) {
 			$valid['log_enabled'] = $options['log_enabled'];
+			$valid['log_file'] = $options['log_file'];
 			
 			$valid['discord_enabled'] = $options['discord_enabled'];
 			$valid['discord_webhook'] = $options['discord_webhook'];
@@ -298,7 +318,42 @@ class Bugsnatcher_Admin
 			
 			$valid['email_enabled'] = ( isset( $input['email_enabled'] ) && !empty( $input['email_enabled'] ) ) ? 1 : 0;
 			$valid['email_list'] = esc_textarea($input['email_list']);
+			
+			$valid['custom_webhooks_enabled'] = $options['custom_webhooks_enabled'];
+			$valid['custom_webhooks_list'] = $options['custom_webhooks_list'];
 		}
+		if ( isset( $_POST['btn_custom_webhooks_settings'] ) ) {
+			$valid['log_enabled'] = $options['log_enabled'];
+			$valid['log_file'] = $options['log_file'];
+			
+			$valid['discord_enabled'] = $options['discord_enabled'];
+			$valid['discord_webhook'] = $options['discord_webhook'];
+			
+			$valid['slack_enabled'] = $options['slack_enabled'];
+			$valid['slack_apikey'] = $options['slack_apikey'];
+			$valid['slack_channel'] = $options['slack_channel'];
+			$valid['slack_botname'] = $options['slack_botname'];
+			
+			$valid['stride_enabled'] = $options['stride_enabled'];
+			$valid['stride_bearer_token'] = $options['stride_bearer_token'];
+			$valid['stride_cloud_id'] = $options['stride_cloud_id'];
+			$valid['stride_conversation_id'] = $options['stride_conversation_id'];
+			
+			$valid['hipchat_enabled'] = $options['hipchat_enabled'];
+			$valid['hipchat_chatname'] = $options['hipchat_chatname'];
+			$valid['hipchat_room_number'] = $options['hipchat_room_number'];
+			$valid['hipchat_token'] = $options['hipchat_token'];
+			
+			$valid['email_enabled'] = $options['email_enabled'];
+			$valid['email_list'] = $options['email_list'];
+			
+			$valid['email_enabled'] = ( isset( $input['email_enabled'] ) && !empty( $input['email_enabled'] ) ) ? 1 : 0;
+			$valid['email_list'] = ($input['email_list']);
+			
+			$valid['custom_webhooks_enabled'] = ( isset( $input['custom_webhooks_enabled'] ) && !empty( $input['custom_webhooks_enabled'] ) ) ? 1 : 0;
+			$valid['custom_webhooks_list'] = esc_textarea( $input['custom_webhooks_list'] );
+		}
+		
 		if ( isset( $_POST['btn_import_settings'] ) ) {
 			if ( isset( $_FILES['bugsnatcher']['tmp_name']['import_file'] ) ) {
 				
